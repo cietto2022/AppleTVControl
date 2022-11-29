@@ -8,7 +8,7 @@ public class Publisher {
 
     public Publisher(Interpreter interp) {
         this.interp = interp;
-        String pythonScriptFullPath = "/home/maisa/PycharmProjects/pyatv/scripts/ScenarioAppleTV.py";
+        String pythonScriptFullPath = "./python/ScenarioAppleTV.py";
         this.interp.runScript(pythonScriptFullPath);
         this.interp.exec("apple_tv = ScenarioAppleTV('192.168.10.246')");
     }

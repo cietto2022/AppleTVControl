@@ -1,8 +1,14 @@
 package com.example.appletvcontrol;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class AppleTv {
 
     ATVData atvData;
+
+    Map<String, Object> data = new HashMap<>();
+
 
     String media_type = "media_type";
     String device_state = "device_state";
@@ -22,6 +28,9 @@ public class AppleTv {
 
     public AppleTv() {
         atvData = new ATVData();
+        data.put("media_type", " ");
+        data.put("media_type", " ");
+        data.put("media_type", " ");
     }
 
     public int getVolume() {

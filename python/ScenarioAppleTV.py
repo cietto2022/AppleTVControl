@@ -1,11 +1,7 @@
 import asyncio
-
 from abc import ABC
-
 from pyatv import connect, scan, const
-
 from java.lang import System
-
 from pyatv.interface import PushListener, Playing, DeviceListener, PowerListener
 
 

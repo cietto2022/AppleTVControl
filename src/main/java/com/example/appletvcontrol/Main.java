@@ -8,8 +8,6 @@ import jep.SharedInterpreter;
 public class Main {
 
     public void test(Interpreter interp){
-        String pyAppleTVPath = "./python/ScenarioAppleTV.py";
-        interp.runScript(pyAppleTVPath);
         AppleTv atv = new AppleTv();
         Listener listener = new Listener();
         Publisher publisher = new Publisher(interp);
@@ -25,7 +23,6 @@ public class Main {
         Main main = new Main();
         try (Interpreter interp = new SharedInterpreter();) {
             main.test(interp);
-
         } catch (Throwable e) {
             e.printStackTrace();
         }
