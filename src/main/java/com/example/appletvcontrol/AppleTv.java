@@ -9,7 +9,6 @@ public class AppleTv {
 
     Map<String, Object> data = new HashMap<>();
 
-
     String media_type = "media_type";
     String device_state = "device_state";
     String title = "title";

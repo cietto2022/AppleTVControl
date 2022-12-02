@@ -2,15 +2,15 @@ package com.example.appletvcontrol;
 
 public class AppleTVCommands {
 
-    public String createAppleTV(){
-        return "apple_tv = ScenarioAppleTV('192.168.10.246')";
+    public static String createAppleTV(String ip){
+        return "apple_tv = ScenarioAppleTV('"+ ip + "')";
     }
 
-    public String scan_network(){
+    public static String scan_network(){
         return "apple_tv._loop.run_until_complete(apple_tv.scan_network())";
     }
 
-    public String connect(){
+    public static String connect(){
         return "apple_tv._loop.run_until_complete(apple_tv.connect())";
     }
 
@@ -19,107 +19,107 @@ public class AppleTVCommands {
     //    interp.exec("apple_tv._java_listener = java_listener");
     //}
 
-    public String run_forever(){
+    public static String run_forever(){
         return "apple_tv._loop.run_forever()";
     }
 
-    public String channel_down(){
+    public static String channel_down(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.channel_down())";
     }
 
-    public String channel_up(){
+    public static String channel_up(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.channel_up())";
     }
 
-    public String down(){
+    public static String down(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.down())";
     }
 
-    public String home(){
+    public static String home(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.home())";
     }
 
-    public String home_hold(){
+    public static String home_hold(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.home_hold())";
     }
 
-    public String left(){
+    public static String left(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.left())";
     }
 
-    public String menu(){
+    public static String menu(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.menu())";
     }
 
-    public String next(){
+    public static String next(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.next())";
     }
 
-    public String play(){
+    public static String play(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.play())";
     }
 
-    public String pause(){
+    public static String pause(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.pause())";
     }
 
-    public String play_pause(){
+    public static String play_pause(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.play_pause())";
     }
 
-    public String right(){
+    public static String right(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.right())";
     }
 
-    public String select(){
+    public static String select(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.select())";
     }
 
-    public String set_position(){
+    public static String set_position(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.set_position())";
     }
 
-    public String set_repeat(){
+    public static String set_repeat(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.set_repeat())";
     }
 
-    public String set_shuffle(){
+    public static String set_shuffle(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.set_shuffle())";
     }
 
-    public String skip_backward(){
+    public static String skip_backward(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.skip_backward())";
     }
 
-    public String skip_forward(){
+    public static String skip_forward(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.skip_forward())";
     }
 
-    public String stop(){
+    public static String stop(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.stop())";
     }
 
-    public String suspend(){
+    public static String suspend(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.suspend())";
     }
 
-    public String top_menu(){
+    public static String top_menu(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.top_menu())";
     }
 
-    public String up(){
+    public static String up(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.up())";
     }
 
-    public String volume_down(){
+    public static String volume_down(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.volume_down())";
     }
 
-    public String volume_up(){
+    public static String volume_up(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.volume_up())";
     }
 
-    public String wakeup(){
+    public static String wakeup(){
         return "apple_tv._loop.run_until_complete(apple_tv._client.remote_control.wakeup())";
     }
 
