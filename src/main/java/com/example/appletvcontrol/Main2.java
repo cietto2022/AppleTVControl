@@ -15,7 +15,7 @@ public class Main2 {
 
 
         //Interpreter interp = new SharedInterpreter();
-        //String pythonScriptFullPath = "/home/maisa/PycharmProjects/pyatv/scripts/ScenarioAppleTV.py";
+        //String pythonScriptFullPath = "/home/maisa/PycharmProjects/pyatv/scripts/oldScenarioAppleTV.py";
         //interp.runScript(pythonScriptFullPath);
 
         //Publisher pub = new Publisher();

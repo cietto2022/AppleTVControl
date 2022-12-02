@@ -4,39 +4,28 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AppleTv {
-
-    ATVData atvData;
-
+    AppleTVCommands atvCommands;
     Map<String, Object> data = new HashMap<>();
-
-    String media_type = "media_type";
-    String device_state = "device_state";
-    String title = "title";
-    String artist = "artist";
-    String album = "album";
-    String genre = "genre";
-    String total_time = "total_time";
-    String position = "position";
-    String shuffle = "shuffle";
-    String repeat = "repeat";
-    String hash = "hash";
-    String series_name = "series_name";
-    String season_number = "season_number";
-    String episode_number = "episode_number";
-    String content_identifier = "content_identifier";
-
     public AppleTv() {
-        atvData = new ATVData();
         data.put("media_type", " ");
-        data.put("media_type", " ");
-        data.put("media_type", " ");
-    }
+        data.put("device_state", " ");
+        data.put("title", " ");
+        data.put("artist", " ");
+        data.put("album", " ");
+        data.put("genre", " ");
+        data.put("total_time", " ");
+        data.put("position", " ");
+        data.put("shuffle", " ");
+        data.put("repeat", " ");
+        data.put("hash", " ");
+        data.put("series_name", " ");
+        data.put("season_number", " ");
+        data.put("episode_number", " ");
+        data.put("content_identifier", " ");
 
-    public int getVolume() {
-        return atvData.vol;
-    }
 
-    public void setVolume(int volume) {
-        atvData.vol = volume;
+
+
+
     }
 }

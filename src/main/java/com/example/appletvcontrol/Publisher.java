@@ -8,7 +8,7 @@ public class Publisher {
 
     public Publisher(Interpreter interp) {
         this.interp = interp;
-        String pythonScriptFullPath = "./python/ScenarioAppleTV.py";
+        String pythonScriptFullPath = "./python/oldScenarioAppleTV.py";
         this.interp.runScript(pythonScriptFullPath);
         this.interp.exec("apple_tv = ScenarioAppleTV('192.168.10.246')");
     }
@@ -129,22 +129,5 @@ public class Publisher {
     public void wakeup(){
         this.interp.exec("apple_tv._loop.run_until_complete(apple_tv._client.remote_control.wakeup())");
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }
