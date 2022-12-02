@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="326.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.applegui.HelloController">
+   <children>
+      <Button layoutX="145.0" layoutY="43.0" mnemonicParsing="false" onAction="#onUpButtonClick" text="UP" />
+      <Button layoutX="70.0" layoutY="78.0" mnemonicParsing="false" onAction="#onLeftButtonClick" text="LEFT" />
+      <Button layoutX="194.0" layoutY="78.0" mnemonicParsing="false" onAction="#onRightButtonClick" text="RIGHT" />
+      <Button layoutX="132.0" layoutY="117.0" mnemonicParsing="false" onAction="#onDownButtonClick" text="DOWN" />
+      <Button layoutX="65.0" layoutY="188.0" mnemonicParsing="false" onAction="#onSelectButtonClick" text="Select" />
+      <Button layoutX="196.0" layoutY="188.0" mnemonicParsing="false" onAction="#onMenuButtonClick" text="Menu" />
+      <Button layoutX="63.0" layoutY="276.0" mnemonicParsing="false" onAction="#onNetflixButtonClick" text="Netflix" />
+      <Button layoutX="185.0" layoutY="276.0" mnemonicParsing="false" onAction="#onYoutubeButtonClick" text="YouTube" />
+      <Button layoutX="121.0" layoutY="332.0" mnemonicParsing="false" onAction="#onConnectButtonClick" text="CONNECT" />
+   </children>
+</Pane>
