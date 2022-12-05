@@ -25,7 +25,7 @@ class ScenarioAppleTV:
         self._atv = None
         self._client = None
         self._loop = asyncio.new_event_loop()
-        self._listener = AppleTVListeners()
+        self._listener = None
         self._media_last_position = 0
 
     async def scan_network(self):
@@ -51,7 +51,8 @@ class ScenarioAppleTV:
         conf.set_credentials(Protocol.RAOP, RAOP_CREDENTIAL)
         conf.set_credentials(Protocol.AirPlay, AIRPLAY_CREDENTIAL)
 
-        self._client = await connect(conf, self._loop, Protocol.Companion)
+        self._client = await connect(conf, self._loop)
+        self._listener = AppleTVListeners(self._client)
         self._client.power.listener = self._listener
         self._client.listener = self._listener
         self._client.push_updater.listener = self._listener
@@ -61,23 +62,9 @@ class ScenarioAppleTV:
         result = await self._client.close()
         return result
 
-    async def check_if_alive(self):
-        while True:
-            await asyncio.sleep(2)
-            try:
-                is_playing = await asyncio.wait_for(self._client.metadata.playing(), 10)
-            except asyncio.TimeoutError:
-                System.out.println("Nada...")
-                self._client.close()
-                await self.connection_lost(asyncio.TimeoutError)
-            else:
-                System.out.println(" ")
-                System.out.println(str(is_playing))
-
-    async def connection_lost(self, exception: Exception) -> None:
-        """Device was unexpectedly disconnected."""
-        System.out.println("Connection lost...")
-        new_connection = ScenarioAppleTV('192.168.10.246')
+    async def reconnect(self) -> None:
+        """ handle reconnection"""
+        new_connection = ScenarioAppleTV('192.168.11.38')
 
         while not new_connection._client:
             try:
@@ -89,6 +76,11 @@ class ScenarioAppleTV:
 
 
 class AppleTVListeners(PowerListener, PushListener, DeviceListener, ABC):
+
+    def __init__(self, ScenarioAppleTV):
+        self.ScenarioAppleTV = ScenarioAppleTV
+        self.java_listener = None
+
     # PowerListener methods
     def powerstate_update(
             self, old_state: const.PowerState, new_state: const.PowerState
@@ -97,18 +89,20 @@ class AppleTVListeners(PowerListener, PushListener, DeviceListener, ABC):
 
     # PushListener methods
     def playstatus_update(self, updater, playstatus: Playing) -> None:
-        System.out.println(" ")
-        System.out.println(" ")
-        System.out.println(str(playstatus))
+        dictionary = playstatus.__dict__
+        for s in playstatus._PROPERTIES:
+            self.java_listener.notify({s: dictionary["_" + s]})
 
     def playstatus_error(self, updater, exception: Exception) -> None:
-        System.out.println(str(exception))
+        self.java_listener.notifyError(str(exception))
 
     # DeviceListener methods
     def connection_lost(self, exception: Exception) -> None:
         """Device was unexpectedly disconnected."""
-        System.out.println("Connection lost...")
+        self.java_listener.notifyUser("Connection lost...")
+        self.ScenarioAppleTV.reconnect()
 
     def connection_closed(self) -> None:
         """Device connection was (intentionally) closed."""
-        System.out.println("Connection closed...")
+        self.java_listener.notifyUser("Connection closed...")
+        self.ScenarioAppleTV.reconnect()

@@ -10,9 +10,8 @@ public class Main {
         AppleTv atv = new AppleTv();
         Listener listener = new Listener(atv);
         Publisher publisher = new Publisher(interp);
-        publisher.scan_network();
-        publisher.setListener(listener);
         publisher.connect();
+        publisher.setListener(listener);
         publisher.play_pause();
         publisher.play_pause();
         publisher.run_forever();

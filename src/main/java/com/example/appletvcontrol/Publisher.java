@@ -8,9 +8,9 @@ public class Publisher {
 
     public Publisher(Interpreter interp) {
         this.interp = interp;
-        String pythonScriptFullPath = "./python/oldScenarioAppleTV.py";
+        String pythonScriptFullPath = "./python/ScenarioAppleTV.py";
         this.interp.runScript(pythonScriptFullPath);
-        this.interp.exec("apple_tv = ScenarioAppleTV('192.168.10.246')");
+        this.interp.exec("apple_tv = ScenarioAppleTV('192.168.11.38')");
     }
 
     public void scan_network(){
@@ -23,7 +23,7 @@ public class Publisher {
 
     public void setListener(Listener listener){
         interp.set("java_listener", listener);
-        interp.exec("apple_tv._java_listener = java_listener");
+        interp.exec("apple_tv._listener.java_listener = java_listener");
     }
 
     public void run_forever(){
