@@ -1,0 +1,13 @@
+
+BACKOFF_TIME_LOWER_LIMIT = 15  # seconds
+BACKOFF_TIME_UPPER_LIMIT = 300  # Five minutes
+
+MEDIA_TYPE_MUSIC = "Music"
+MEDIA_TYPE_TVSHOW = "Tvshow"
+MEDIA_TYPE_VIDEO = "Video"
+
+STATE_IDLE = "Idle"
+STATE_OFF = "Off"
+STATE_PAUSED = "Paused"
+STATE_PLAYING = "Playing"
+STATE_STANDBY = "Standby"
