@@ -1,33 +1,74 @@
+"""
+    This is a Python scrypt for Scenario Apple TV Driver (used with JEP)
+    @author: Paulo Cesar de Moraes Filho
+"""
+
+# *************** Imports and Constants
 import asyncio
 from abc import ABC
 from random import randrange
 
-from pyatv import exceptions, scan, connect
-from pyatv.const import FeatureState, FeatureName, Protocol, DeviceState, PowerState, MediaType
-from pyatv.interface import Playing, AppleTV, PushListener
-from pyatv.protocols.mrp.protobuf import RepeatMode
+from pyatv import exceptions, scan, connect, const, FacadeAppleTV
+from pyatv.const import FeatureState, FeatureName, Protocol, PowerState, MediaType, DeviceState, InputAction
+from pyatv.interface import Playing, PushListener, DeviceListener, PowerListener
 
-from const import *
+BACKOFF_TIME_LOWER_LIMIT = 5  # seconds
+BACKOFF_TIME_UPPER_LIMIT = 300  # Five minutes
+
+MEDIA_TYPE_MUSIC = "Music"
+MEDIA_TYPE_TVSHOW = "Tvshow"
+MEDIA_TYPE_VIDEO = "Video"
+
+STATE_IDLE = "Idle"
+STATE_OFF = "Off"
+STATE_PAUSED = "Paused"
+STATE_PLAYING = "Playing"
+STATE_STANDBY = "Standby"
 
 
+# *************** Apple TV Classes
 class AppleTvEntry:
-    def __init__(self, host, credentials: dict[Protocol, str], loop):
+    def __init__(self, host, credentials: dict[Protocol, str], loop: asyncio.AbstractEventLoop):
         self.host = host
         self.credentials = credentials | {}
         self.loop = loop
 
 
-class AppleTvManager:
+class ScenarioAppleTV(DeviceListener, PowerListener, PushListener, ABC):
     def __init__(self, entry: AppleTvEntry):
-        self.atv = None
+        """
+            Apple TV representation.
+            - DeviceListener: connection callbacks
+            - PowerListener: Deep Sleep (on/off) callbacks
+            - PushListener: State changes callbacks
+        """
+        self.atv: FacadeAppleTV = None
         self.entry = entry
         self._connection_attempts = 0
         self._connection_was_lost = False
         self.is_on = True
         self._task = None
+        self._playing = None
+        self._app_list = {}
 
+# *************** Connection handling functions
     async def initialize(self):
         await self.connect()
+
+    def _init_listeners(self):
+        # Self listener
+        self.atv.listener = self
+
+        # Listen to push updates
+        if self.atv.features.in_state(FeatureState.Available, FeatureName.PushUpdates):
+            self.atv.push_updater.listener = self
+            self.atv.push_updater.start()
+
+        # Listen to power updates
+        self.atv.power.listener = self
+
+        if self.atv.features.in_state(FeatureState.Available, FeatureName.AppList):
+            self.entry.loop.create_task(self._update_app_list())
 
     async def connect(self):
         """Connect to device."""
@@ -35,9 +76,9 @@ class AppleTvManager:
         self._start_connect_loop()
 
     def _start_connect_loop(self):
-        """Start background connect loop to device."""
+        """Starts a connection loop on background."""
         if not self._task and self.atv is None and self.is_on:
-            self._task = self.entry.loop.call_soon_threadsafe(self._connect_loop)
+            self._task = self.entry.loop.create_task(self._connect_loop())
         else:
             print("Not starting loop")
 
@@ -52,13 +93,14 @@ class AppleTvManager:
             if self.atv is not None:
                 break
             self._connection_attempts += 1
-            backoff = min(
-                max(
-                    BACKOFF_TIME_LOWER_LIMIT,
-                    randrange(2 ** self._connection_attempts),
-                ),
-                BACKOFF_TIME_UPPER_LIMIT,
-            )
+            # backoff = min(
+            #     max(
+            #         BACKOFF_TIME_LOWER_LIMIT,
+            #         randrange(2 ** self._connection_attempts),
+            #     ),
+            #     BACKOFF_TIME_UPPER_LIMIT,
+            # )
+            backoff = BACKOFF_TIME_LOWER_LIMIT
 
             print("Reconnecting in %d seconds", backoff)
             await asyncio.sleep(backoff)
@@ -67,7 +109,7 @@ class AppleTvManager:
         self._task = None
 
     async def connect_once(self, raise_missing_credentials):
-        """Try to connect once."""
+        """Try to establish a connection once."""
         try:
             if conf := await self.host_scan():
                 await self.host_connect(conf, raise_missing_credentials)
@@ -83,6 +125,7 @@ class AppleTvManager:
             self.atv = None
 
     async def host_scan(self):
+        """Search for a specific address provided by AppleTVEntry."""
         address = self.entry.host
 
         protocols = {
@@ -99,6 +142,7 @@ class AppleTvManager:
         return None
 
     async def host_connect(self, conf, raise_missing_credentials):
+        """Setup credentials and protocols then connect to host address."""
         credentials = self.entry.credentials
         missing_protocols = []
 
@@ -118,7 +162,7 @@ class AppleTvManager:
 
         print("Connecting...")
         self.atv = await connect(conf, self.entry.loop)
-        self.atv.listener = self
+        self._init_listeners()
 
         self._connection_attempts = 0
         if self._connection_was_lost:
@@ -126,7 +170,7 @@ class AppleTvManager:
             self._connection_was_lost = False
 
     async def disconnect(self):
-        """Disconnect from device."""
+        """Disconnect the device."""
         print("Disconnecting from device")
         self.is_on = False
         try:
@@ -139,33 +183,48 @@ class AppleTvManager:
         except (Exception,):  # pylint: disable=broad-except
             print("An error occurred while disconnecting")
 
+    def _handle_disconnect(self):
+        """Handle with a connection lost."""
+        if self.atv:
+            self.atv.close()
+            self.atv = None
+        self._start_connect_loop()
 
-class AppleTvEntity:
-    def __init__(self, manager):
-        self.atv = None
-        self.manager = manager
+# *************** Callbacks dos Listeners
+    def connection_lost(self, _):
+        """Device disconnected unintentionally.
+        This is a callback function from pyatv.interface.DeviceListener.
+        """
+        print('Connection lost to Apple TV')
+        self._connection_was_lost = True
+        self._handle_disconnect()
 
+    def connection_closed(self):
+        """Device disconnected intentionally - close().
+        This is a callback function from pyatv.interface.DeviceListener.
+        """
+        # self._handle_disconnect()
 
-class AppleTvPlayer(AppleTvEntity, PushListener, ABC):
-    def __init__(self, manager: AppleTvManager):
-        """Apple TV player representation"""
-        super().__init__(manager)
-        self._playing = None
-        self._app_list = {}
-        
-    async def initialize(self):
-        self.atv = self.manager.atv
-        # Listen to push updates
-        if self.atv.features.in_state(FeatureState.Available, FeatureName.PushUpdates):
-            self.atv.push_updater.listener = self
-            self.atv.push_updater.start()
+    def playstatus_update(self, updater, playstatus: Playing) -> None:
+        """Retrieve playing information when state changes.
+        This is a callback function from pyatv.interface.PushListener.
+        """
+        self._playing = playstatus
+        print(" ")
+        print(playstatus)
 
-        # Listen to power updates
-        self.atv.power.listener = self
-        
-        if self.atv.features.in_state(FeatureState.Available, FeatureName.AppList):
-            self.manager.entry.loop.create_task(self._update_app_list())
+    def playstatus_error(self, updater, exception: Exception) -> None:
+        """Called when got a playing error.
+        This is a callback function from pyatv.interface.PushListener.
+        """
+        print("erro")
 
+    def powerstate_update(
+            self, old_state: const.PowerState, new_state: const.PowerState
+    ):
+        print(new_state)
+
+# *************** App List Update
     async def _update_app_list(self):
         print("Updating app list")
         try:
@@ -180,17 +239,16 @@ class AppleTvPlayer(AppleTvEntity, PushListener, ABC):
                 for app in sorted(apps, key=lambda app: app.name.lower())
             }
 
-    def playstatus_update(self, updater, playstatus: Playing) -> None:
-        self._playing = playstatus
-        print(playstatus)
-
-    def playstatus_error(self, updater, exception: Exception) -> None:
-        print("erro")
+# *************** Apple TV Properties (GET)
+    @property
+    def is_connecting(self):
+        """Return true if connection is in progress."""
+        return self._task is not None
 
     @property
     def state(self):
         """Return the state of the device."""
-        if self.manager.is_connecting:
+        if self.is_connecting:
             return None
         if self.atv is None:
             return STATE_OFF
@@ -326,7 +384,66 @@ class AppleTvPlayer(AppleTvEntity, PushListener, ABC):
             return self.atv.features.in_state(FeatureState.Available, feature)
         return False
 
-    # REMOTE CONTROL
+# *************** Physical Remote Control functions
+    async def async_up(self, action: InputAction = InputAction.SingleTap) -> None:
+        if self.atv:
+            await self.atv.remote_control.up(action)
+
+    async def async_down(self, action: InputAction = InputAction.SingleTap) -> None:
+        if self.atv:
+            await self.atv.remote_control.down(action)
+
+    async def async_left(self, action: InputAction = InputAction.SingleTap) -> None:
+        if self.atv:
+            await self.atv.remote_control.left(action)
+
+    async def async_right(self, action: InputAction = InputAction.SingleTap) -> None:
+        if self.atv:
+            await self.atv.remote_control.right(action)
+
+    async def async_select(self, action: InputAction = InputAction.SingleTap) -> None:
+        if self.atv:
+            await self.atv.remote_control.select(action)
+
+    async def async_menu(self, action: InputAction = InputAction.SingleTap) -> None:
+        if self.atv:
+            await self.atv.remote_control.menu(action)
+
+    async def async_home(self, action: InputAction = InputAction.SingleTap) -> None:
+        if self.atv:
+            await self.atv.remote_control.home(action)
+
+    async def async_media_play_pause(self) -> None:
+        """Pause media on media player."""
+        if self._playing:
+            await self.atv.remote_control.play_pause()
+
+    async def async_remote_volume_up(self) -> None:
+        if self.atv:
+            await self.atv.remote_control.volume_up()
+
+    async def async_remote_volume_down(self) -> None:
+        if self.atv:
+            await self.atv.remote_control.volume_down()
+
+# *************** Audio functions
+    async def async_volume_up(self) -> None:
+        """Turn volume up for media player."""
+        if self.atv:
+            await self.atv.audio.volume_up()
+
+    async def async_volume_down(self) -> None:
+        """Turn volume down for media player."""
+        if self.atv:
+            await self.atv.audio.volume_down()
+
+    async def async_set_volume_level(self, volume: float) -> None:
+        """Set volume level, range 0..1."""
+        if self.atv:
+            # pyatv expects volume in percent
+            await self.atv.audio.set_volume(volume * 100.0)
+
+# *************** Extra functions (logical Remote Control)
     async def async_turn_on(self) -> None:
         """Turn the media player on."""
         if self._is_feature_available(FeatureName.TurnOn):
@@ -340,10 +457,10 @@ class AppleTvPlayer(AppleTvEntity, PushListener, ABC):
         ):
             await self.atv.power.turn_off()
 
-    async def async_media_play_pause(self) -> None:
-        """Pause media on media player."""
-        if self._playing:
-            await self.atv.remote_control.play_pause()
+    async def async_select_source(self, source: str) -> None:
+        """Select input source."""
+        if app_id := self._app_list.get(source):
+            await self.atv.apps.launch_app(app_id)
 
     async def async_media_play(self) -> None:
         """Play media."""
@@ -370,28 +487,42 @@ class AppleTvPlayer(AppleTvEntity, PushListener, ABC):
         if self.atv:
             await self.atv.remote_control.previous()
 
-    async def async_media_seek(self, position: float) -> None:
+    async def async_media_seek(self, position: int) -> None:
         """Send seek command."""
         if self.atv:
             await self.atv.remote_control.set_position(position)
 
-    async def async_volume_up(self) -> None:
-        """Turn volume up for media player."""
+    async def async_media_repeat(self) -> None:
+        """Set repeat status."""
         if self.atv:
-            await self.atv.audio.volume_up()
+            await self.atv.remote_control.set_repeat()
 
-    async def async_volume_down(self) -> None:
-        """Turn volume down for media player."""
+    async def async_media_shuffle(self) -> None:
+        """Set shuffle status."""
         if self.atv:
-            await self.atv.audio.volume_down()
+            await self.atv.remote_control.set_shuffle()
 
-    async def async_set_volume_level(self, volume: float) -> None:
-        """Set volume level, range 0..1."""
+    async def async_media_skip_backward(self) -> None:
+        """Send skip_backward command."""
         if self.atv:
-            # pyatv expects volume in percent
-            await self.atv.audio.set_volume(volume * 100.0)
+            await self.atv.remote_control.skip_backward()
 
-    async def async_select_source(self, source: str) -> None:
-        """Select input source."""
-        if app_id := self._app_list.get(source):
-            await self.atv.apps.launch_app(app_id)
+    async def async_media_skip_forward(self) -> None:
+        """Send skip_forward command."""
+        if self.atv:
+            await self.atv.remote_control.skip_forward()
+
+    async def async_channel_up(self) -> None:
+        """Send channel up command."""
+        if self.atv:
+            await self.atv.remote_control.channel_up()
+
+    async def async_channel_down(self) -> None:
+        """Send channel down command."""
+        if self.atv:
+            await self.atv.remote_control.channel_down()
+
+    async def async_top_menu(self) -> None:
+        """Back to top menu of Apple TV."""
+        if self.atv:
+            await self.atv.remote_control.top_menu()

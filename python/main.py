@@ -3,6 +3,7 @@ import asyncio
 from pyatv import Protocol
 
 from apple_tv import AppleTvEntry, AppleTvManager, AppleTvPlayer
+from scenario_apple_tv import ScenarioAppleTV
 
 AIRPLAY_CREDENTIAL = '6f955f6ee74b2ed83377e60060ba3db9bacd64326cf93a9ab923f3bb9134775f' \
                      ':523d4f77349f21cb057e1c3f2385e9339b0fc2ee2863e8cdabbc0365c730a01d' \
@@ -28,25 +29,28 @@ async def test_tv():
         Protocol.RAOP.value: RAOP_CREDENTIAL
     }
     entry = AppleTvEntry(HOST_IP, creds, MAIN_LOOP)
-    manager = AppleTvManager(entry)
 
-    await manager.connect_once(True)
-    if not manager.atv:
+    my_atv = ScenarioAppleTV(entry)
+
+    await my_atv.connect_once(True)
+    if not my_atv.atv:
         print("deu ruim")
     else:
-        await manager.initialize()
-
-        # PLAYER_ATV
-        player = AppleTvPlayer(manager)
-        await player.initialize()
-        await asyncio.sleep(5)
-        print("Go now")
-
-        # COMANDOS DO PLAYER
-        await player.async_turn_off()
+        await my_atv.initialize()
+        await asyncio.sleep(2)
 
     while True:
-        await asyncio.sleep(1)
+        try:
+            await asyncio.sleep(2)
+            # await my_atv.atv.remote_control.right()
+            # await asyncio.sleep(2)
+            # await my_atv.atv.remote_control.up()
+            # await asyncio.sleep(2)
+            # await my_atv.atv.remote_control.down()
+            # await asyncio.sleep(2)
+            # await my_atv.atv.remote_control.left()
+        except (Exception,):
+            pass
 
 
 MAIN_LOOP.run_until_complete(test_tv())
